@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Dilution Rush: a PHD113 concentration and dilution practice game.">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Dilution Rush</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: a compounding-counter game — Rx card on the left, a graduated cylinder that fills with the shift on the right */
+:root {
+  --bg: #EEF4F4; --surface: #FFFFFF; --surface-2: #E3EEEE; --ink: #12323A; --muted: #56686F;
+  --line: #CFE0DF; --teal: #0E7C86; --deep: #0E4D5C; --amber: #E39A2D; --red: #D9483B;
+  --good: #23855A; --good-bg: #DDF1E6; --bad: #C2382B; --bad-bg: #FBE3DF; --on-accent: #FFFFFF;
+  --liquid: #4FB3BC; --liquid-2: #E9A23B;
+  --f-display: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+  --f-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 14px; --shadow: #0E4D5C;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0A1D22; --surface: #10303A; --surface-2: #15404C; --ink: #E4F0F0; --muted: #9BB4B9;
+  --line: #24505B; --teal: #43B9C3; --deep: #9FDCE1; --amber: #F2B55C; --red: #F27A6C;
+  --good: #5FD39A; --good-bg: #133D2E; --bad: #FF8A7C; --bad-bg: #4A1F1C; --on-accent: #06242A;
+  --liquid: #2E9AA4; --liquid-2: #D79A3F; --shadow: #0B6870; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0A1D22; --surface: #10303A; --surface-2: #15404C; --ink: #E4F0F0; --muted: #9BB4B9;
+  --line: #24505B; --teal: #43B9C3; --deep: #9FDCE1; --amber: #F2B55C; --red: #F27A6C;
+  --good: #5FD39A; --good-bg: #133D2E; --bad: #FF8A7C; --bad-bg: #4A1F1C; --on-accent: #06242A;
+  --liquid: #2E9AA4; --liquid-2: #D79A3F; --shadow: #0B6870; color-scheme: dark }
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 40px; }
+.wrap { max-width: 1040px; margin: 0 auto; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+button { font: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+/* top bar */
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-block: 18px; }
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--f-display); font-weight: 800; font-size: 22px; color: var(--deep); background: none; border: 0; padding: 0; }
+.brand svg { width: 28px; height: 28px; }
+.stats { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-size: 14px; }
+.chip b { font-family: var(--f-mono); font-size: 15px; }
+.chip .lbl { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+.caps { display: flex; gap: 4px; }
+.cap { width: 22px; height: 11px; border-radius: 6px; background: linear-gradient(90deg, var(--red) 50%, var(--surface-2) 50%); border: 1px solid var(--red); transition: opacity .3s, transform .3s; }
+.cap.lost { opacity: .25; transform: rotate(-25deg) scale(.8); }
+
+/* home */
+.hero { display: grid; grid-template-columns: 1.3fr 1fr; gap: 32px; align-items: center; padding-block: 12px 28px; }
+.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--red); }
+.hero h1 { font-size: clamp(40px, 7vw, 76px); line-height: .95; font-weight: 800; color: var(--deep); margin-block: 10px 14px; }
+.hero h1 span { color: var(--teal); }
+.lede { font-size: 18px; max-width: 34em; color: var(--ink); }
+.cta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px; }
+.btn { border: 0; border-radius: 12px; padding: 13px 22px; font-weight: 700; font-size: 16px; transition: transform .12s, box-shadow .12s; }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--teal); color: var(--on-accent); box-shadow: 0 4px 0 var(--shadow); }
+.btn.secondary { background: var(--surface); color: var(--deep); border: 2px solid var(--teal); }
+.btn.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); padding: 10px 16px; font-weight: 600; font-size: 14px; }
+.rules { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-block: 8px 30px; }
+.rule { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; font-size: 14px; }
+.rule b { display: block; font-family: var(--f-mono); font-size: 20px; color: var(--teal); margin-bottom: 2px; }
+.section-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.section-h h2 { font-size: 24px; color: var(--deep); }
+.section-h p { margin: 0; color: var(--muted); font-size: 14px; }
+.stations { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.st { text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 6px; color: var(--ink); transition: border-color .15s, transform .15s; }
+.st:hover { border-color: var(--teal); transform: translateY(-2px); }
+.st .no { font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+.st h3 { font-size: 19px; color: var(--deep); }
+.st .sub { font-size: 13px; color: var(--muted); }
+.st .best { font-size: 13px; color: var(--amber); font-weight: 700; }
+.st.boss { background: var(--deep); border-color: var(--deep); }
+.st.boss h3, .st.boss .no, .st.boss .sub, .st.boss .best { color: var(--bg); }
+
+/* cylinder */
+.cyl { width: 100%; max-width: 260px; margin: 0 auto; display: block; }
+.cyl .glass { fill: none; stroke: var(--muted); stroke-width: 3; }
+.cyl .tick { stroke: var(--muted); stroke-width: 1.5; }
+.cyl .ticklbl { fill: var(--muted); font-family: var(--f-mono); font-size: 11px; }
+.cyl .liq { fill: var(--liquid); transition: y .8s cubic-bezier(.3,1.4,.5,1), height .8s cubic-bezier(.3,1.4,.5,1); }
+.cyl .menis { fill: var(--liquid-2); transition: y .8s cubic-bezier(.3,1.4,.5,1); }
+.cyl .base { fill: var(--muted); }
+.bubble { fill: var(--surface); opacity: .6; }
+@media (prefers-reduced-motion: no-preference) { .bubble { animation: rise 3s linear infinite; } }
+@keyframes rise { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: .6; } 100% { transform: translateY(-120px); opacity: 0; } }
+
+/* play */
+.play { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 24px; align-items: start; }
+.rx { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; min-width: 0; }
+.rx-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 14px 20px; background: var(--deep); color: var(--bg); }
+.rx-top .station { font-weight: 700; font-size: 14px; letter-spacing: .04em; }
+.rx-top .count { font-family: var(--f-mono); font-size: 13px; opacity: .85; }
+.rx-body { padding: 20px 22px 22px; display: grid; gap: 16px; }
+.rx-meta { display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap; color: var(--muted); font-size: 13px; border-bottom: 1px dashed var(--line); padding-bottom: 12px; }
+.rx-meta .sym { font-family: var(--f-display); font-weight: 800; font-size: 34px; color: var(--red); line-height: 1; }
+.q { font-size: 20px; line-height: 1.45; }
+.q b { color: var(--deep); }
+.timer { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.timer i { display: block; height: 100%; width: 100%; background: var(--amber); transform-origin: left; }
+.timer-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+.answer { display: flex; gap: 10px; flex-wrap: wrap; align-items: stretch; }
+.field { flex: 1 1 220px; display: flex; align-items: center; border: 2px solid var(--line); border-radius: 12px; background: var(--bg); overflow: hidden; min-width: 0; }
+.field:focus-within { border-color: var(--teal); }
+.field input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--ink); font-family: var(--f-mono); font-size: 22px; padding: 12px 14px; outline: none; }
+.field .unit { padding: 0 14px; font-family: var(--f-mono); color: var(--muted); font-size: 15px; white-space: nowrap; }
+.choices { display: grid; gap: 10px; }
+.choice { text-align: left; background: var(--bg); border: 2px solid var(--line); border-radius: 12px; padding: 12px 14px; color: var(--ink); font-size: 16px; display: flex; gap: 12px; align-items: flex-start; }
+.choice:hover:not(:disabled) { border-color: var(--teal); }
+.choice .k { font-family: var(--f-mono); font-weight: 700; color: var(--teal); }
+.choice.right { border-color: var(--good); background: var(--good-bg); }
+.choice.wrong { border-color: var(--bad); background: var(--bad-bg); }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.hint { background: var(--surface-2); border-radius: 12px; padding: 12px 14px; font-size: 15px; }
+.hint b { color: var(--amber); }
+.fb { border-radius: 14px; padding: 16px 18px; display: grid; gap: 10px; }
+.fb.ok { background: var(--good-bg); }
+.fb.no { background: var(--bad-bg); }
+.fb .verdict { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.fb .verdict h3 { font-size: 22px; }
+.fb.ok h3 { color: var(--good); } .fb.no h3 { color: var(--bad); }
+.pts { font-family: var(--f-mono); font-weight: 700; font-size: 20px; }
+.steps { margin: 0; padding-left: 22px; display: grid; gap: 4px; font-family: var(--f-mono); font-size: 14px; }
+.steps li::marker { color: var(--teal); font-weight: 700; }
+.side { display: grid; gap: 14px; justify-items: center; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+.side .cap-lbl { font-size: 12px; color: var(--muted); text-align: center; }
+.mult { font-family: var(--f-mono); font-size: 13px; color: var(--muted); text-align: center; }
+.mult b { color: var(--amber); font-size: 18px; }
+@media (prefers-reduced-motion: no-preference) {
+  .shake { animation: shake .4s; }
+  .pop { animation: pop .45s; }
+}
+@keyframes shake { 20%,60% { transform: translateX(-6px); } 40%,80% { transform: translateX(6px); } }
+@keyframes pop { 0% { transform: scale(.96); } 60% { transform: scale(1.02); } 100% { transform: scale(1); } }
+
+/* end */
+.end { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; padding-top: 8px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 22px; min-width: 0; }
+.rank { font-size: clamp(30px, 5vw, 46px); color: var(--deep); font-weight: 800; line-height: 1.05; margin-block: 6px 12px; }
+.big { display: flex; gap: 24px; flex-wrap: wrap; margin-block: 12px; }
+.big div { display: grid; }
+.big b { font-family: var(--f-mono); font-size: 34px; color: var(--teal); }
+.big span { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.brk { display: grid; gap: 10px; }
+.brk-row { display: grid; grid-template-columns: 150px 1fr 48px; gap: 10px; align-items: center; font-size: 14px; }
+.brk-bar { height: 10px; border-radius: 5px; background: var(--surface-2); overflow: hidden; }
+.brk-bar i { display: block; height: 100%; background: var(--teal); }
+.brk-row .num { text-align: right; }
+.miss { display: grid; gap: 12px; margin-top: 14px; }
+.miss details { background: var(--bg); border-radius: 12px; padding: 12px 14px; }
+.miss summary { cursor: pointer; font-weight: 600; }
+.miss .q { font-size: 15px; margin-block: 8px; }
+.note { font-size: 13px; color: var(--muted); }
+.toast { position: fixed; left: 50%; top: calc(14px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); background: var(--deep); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-weight: 700; font-size: 14px; z-index: 20; }
+
+@media (max-width: 760px) {
+  .hero, .play, .end { grid-template-columns: minmax(0, 1fr); }
+  .hero .cylwrap { display: none; }
+  .rules { grid-template-columns: repeat(2, 1fr); }
+  .side { position: static; grid-template-columns: auto 1fr; justify-items: start; align-items: center; width: 100%; order: -1; }
+  .side .cyl { max-width: 70px; grid-row: span 3; }
+  .q { font-size: 18px; }
+  .brk-row { grid-template-columns: 110px 1fr 40px; }
+}
+</style>
+
+<div class="wrap">
+  <header class="bar">
+    <button class="brand" id="homeBtn" type="button" aria-label="Back to start">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M11 3h10M13 3v9L5 26a3 3 0 0 0 2.6 4h16.8A3 3 0 0 0 27 26l-8-14V3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><path d="M9 21h14l3 5a2 2 0 0 1-1.8 3H7.8A2 2 0 0 1 6 26z" fill="var(--teal)"/></svg>
+      Dilution Rush
+    </button>
+    <div class="stats" id="stats" hidden>
+      <div class="chip"><span class="lbl">Score</span><b id="sScore">0</b></div>
+      <div class="chip"><span class="lbl">Streak</span><b id="sStreak">0</b></div>
+      <div class="chip" id="sSafetyChip"><span class="lbl">Safety</span><span class="caps" id="sCaps"></span></div>
+    </div>
+  </header>
+  <main id="app"></main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+// ===== Question generators (pure functions, tested in node) =====
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+function fmt(n, dp = 2) {
+  if (!isFinite(n)) return String(n);
+  const r = Math.round(n * Math.pow(10, dp)) / Math.pow(10, dp);
+  return r.toLocaleString("en-US", { maximumFractionDigits: dp });
+}
+const PATIENTS = ["Mr Murugan", "Pn. Aminah", "En. Lim", "Cik Farah", "Mr Raj", "Pn. Siti", "Encik Hafiz", "Ms Tan"];
+const tolRel = (ans, r = 0.01) => Math.max(Math.abs(ans) * r, 1e-9);
+function mc(text, choices, correct, steps, hint) {
+  // choices: array of strings; correct: index into choices. Shuffle keeping track.
+  const order = shuffle(choices.map((c, i) => i));
+  return { type: "mc", text, choices: order.map((i) => choices[i]), correctIndex: order.indexOf(correct), steps, hint };
+}
+
+const STATIONS = [
+  {
+    id: "ratio", name: "Ratio ↔ %", full: "Expressing concentration", color: "teal",
+    gens: [
+      () => {
+        const x = pick([100, 200, 250, 400, 500, 1000, 2000, 2500, 5000, 10000, 20000]);
+        const ans = 100 / x;
+        return { type: "num", text: `A label reads <b>1:${x.toLocaleString()}</b> (w/v). Express this as a <b>percentage</b> strength.`, unit: "% w/v", answer: ans, tol: tolRel(ans),
+          steps: [`% = 100 ÷ x`, `= 100 ÷ ${x.toLocaleString()}`, `= ${fmt(ans, 4)}% w/v`], hint: "For a ratio strength 1:x, % = 100 ÷ x." };
+      },
+      () => {
+        const p = pick([1, 0.5, 0.25, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005]);
+        const ans = 100 / p;
+        return { type: "num", text: `Express <b>${p}% w/v</b> as a ratio strength <b>1 : x</b>. What is x?`, unit: "x", answer: ans, tol: tolRel(ans),
+          steps: [`x = 100 ÷ %`, `= 100 ÷ ${p}`, `= ${fmt(ans, 0)}, so the strength is 1:${fmt(ans, 0)}`], hint: "Reverse the rule: x = 100 ÷ %." };
+      },
+      () => {
+        const opts = shuffle([[400, "1:400"], [1000, "1:1000"], [2000, "1:2000"], [100, "1:100"], [20000, "1:20,000"]]).slice(0, 3);
+        const pctOpt = pick([0.5, 0.15, 0.08, 0.02]);
+        const all = opts.map(([x, l]) => ({ l, v: 100 / x })).concat([{ l: `${pctOpt}%`, v: pctOpt }]);
+        const strongest = all.reduce((m, o, i) => (o.v > all[m].v ? i : m), 0);
+        return mc("Which of these solutions is the <b>strongest</b>?", all.map((o) => o.l), strongest,
+          all.map((o) => `${o.l} = ${fmt(o.v, 4)}%`), "Convert everything to % first.");
+      },
+    ],
+  },
+  {
+    id: "c1v1", name: "C₁V₁ = C₂V₂", full: "Dilution equation", color: "amber",
+    gens: [
+      () => {
+        const C1 = pick([10, 20, 25, 50, 100]);
+        const C2 = C1 / pick([2, 4, 5, 10]);
+        const V2 = pick([50, 100, 200, 250, 500]);
+        const ans = (V2 * C2) / C1;
+        return { type: "num", text: `You have a <b>${C1} mg/mL</b> stock solution. How much stock do you need to prepare <b>${V2} mL</b> of a <b>${fmt(C2)} mg/mL</b> solution?`, unit: "mL", answer: ans, tol: tolRel(ans),
+          steps: [`V₁ = V₂ × C₂ ÷ C₁`, `= ${V2} × ${fmt(C2)} ÷ ${C1}`, `= ${fmt(ans)} mL of stock, made up to ${V2} mL`], hint: "Rearrange for V₁: V₁ = V₂C₂ ÷ C₁." };
+      },
+      () => {
+        const C1 = pick([10, 20, 50]);
+        const C2 = C1 / pick([2, 5, 10]);
+        const V2 = pick([30, 50, 100, 200]);
+        const v1 = (V2 * C2) / C1, ans = V2 - v1;
+        return { type: "num", text: `You have a <b>${C1} mg/mL</b> stock and need <b>${V2} mL</b> of a <b>${fmt(C2)} mg/mL</b> solution. How much <b>diluent</b> should you add?`, unit: "mL", answer: ans, tol: tolRel(ans),
+          steps: [`Stock: V₁ = ${V2} × ${fmt(C2)} ÷ ${C1} = ${fmt(v1)} mL`, `Diluent = ${V2} − ${fmt(v1)}`, `= ${fmt(ans)} mL`], hint: "Find the stock volume first, then subtract it from the final volume." };
+      },
+      () => {
+        const V1 = pick([100, 200, 250, 500]);
+        const C1 = pick([5, 10, 12, 15, 20, 30]);
+        const V2 = V1 * pick([2, 3, 4, 5]);
+        const ans = (V1 * C1) / V2;
+        return { type: "num", text: `<b>${V1} mL</b> of a <b>${C1}% w/v</b> solution is diluted to <b>${V2} mL</b>. What is the new strength?`, unit: "% w/v", answer: ans, tol: tolRel(ans),
+          steps: [`C₂ = V₁ × C₁ ÷ V₂`, `= ${V1} × ${C1} ÷ ${V2}`, `= ${fmt(ans)}% w/v (still w/v: diluting never changes the type of strength)`], hint: "Volume went up by a factor; the strength goes down by the same factor." };
+      },
+    ],
+  },
+  {
+    id: "stock", name: "Stock solutions", full: "Stock solutions", color: "red",
+    gens: [
+      () => {
+        const a = pick([100, 200, 400, 500, 1000]);
+        const b = a * pick([2, 4, 5, 10, 20]);
+        const L = pick([1, 2, 4, 5]);
+        const ans = (L * 1000 * a) / b;
+        return { type: "num", text: `How many mL of a <b>1:${a}</b> (w/v) stock solution should be used to make <b>${L} L</b> of a <b>1:${b.toLocaleString()}</b> (w/v) solution?`, unit: "mL", answer: ans, tol: tolRel(ans),
+          steps: [`${L} L = ${L * 1000} mL; 1:${a} = ${fmt(100 / a, 4)}%; 1:${b.toLocaleString()} = ${fmt(100 / b, 4)}%`, `V₁ = ${L * 1000} × ${fmt(100 / b, 4)} ÷ ${fmt(100 / a, 4)}`, `= ${fmt(ans)} mL of stock`], hint: "Convert both ratio strengths to % (or keep them as fractions) and use V₁ = V₂C₂ ÷ C₁." };
+      },
+      () => {
+        const P = pick([1, 2, 5]);
+        const N = pick([10000, 20000, 25000, 50000]);
+        const L = pick([1, 2, 4, 5]);
+        const ans = (L * 1000 * (100 / N)) / P;
+        return { type: "num", text: `How many mL of a <b>${P}%</b> red dye stock are needed to colour <b>${L} L</b> of mouthwash at <b>1:${N.toLocaleString()}</b> (w/v)?`, unit: "mL", answer: ans, tol: tolRel(ans),
+          steps: [`1:${N.toLocaleString()} = 100 ÷ ${N.toLocaleString()} = ${fmt(100 / N, 4)}%`, `V₁ = ${L * 1000} × ${fmt(100 / N, 4)} ÷ ${P}`, `= ${fmt(ans)} mL of ${P}% dye stock`], hint: "Convert 1:N to a percentage first." };
+      },
+      () => {
+        const c = pick([0.1, 0.2, 0.3, 0.5, 0.9]);
+        const D = pick([500, 1000, 2000]);
+        const d = pick([10, 20, 25, 50]);
+        const Vs = d * pick([5, 10, 20]);
+        const inD = (D * c) / 100, ans = inD * (Vs / d);
+        return { type: "num", text: `How many grams of sodium chloride are needed to prepare <b>${Vs} mL</b> of a stock solution, such that <b>${d} mL</b> diluted to <b>${D} mL</b> gives a <b>${c}% w/v</b> solution?`, unit: "g", answer: ans, tol: tolRel(ans),
+          steps: [`NaCl in the diluted solution: ${D} × ${c} ÷ 100 = ${fmt(inD, 3)} g`, `All of it comes from ${d} mL of stock`, `In ${Vs} mL of stock: ${fmt(inD, 3)} × (${Vs} ÷ ${d}) = ${fmt(ans, 3)} g`], hint: "Work backwards: how much drug is in the final diluted solution? That all came from the small volume of stock." };
+      },
+    ],
+  },
+  {
+    id: "alcacid", name: "Alcohol & acids", full: "Alcohol and acids", color: "teal",
+    gens: [
+      () => {
+        const pairs = [[95, 70], [95, 50], [90, 70], [70, 45], [50, 30], [96, 60], [85, 50]];
+        const [a, b] = pick(pairs);
+        const V = pick([100, 200, 300, 500, 1000]);
+        const ans = (V * b) / a;
+        return { type: "num", text: `You have <b>${a}% v/v</b> alcohol. How much of it do you need to prepare <b>${V} mL</b> of <b>${b}% v/v</b> alcohol?`, unit: "mL", answer: ans, tol: Math.max(0.5, tolRel(ans)),
+          steps: [`V₁ = V₂ × C₂ ÷ C₁ = ${V} × ${b} ÷ ${a}`, `= ${fmt(ans, 1)} mL of ${a}% alcohol`, `Then add water to ${V} mL (not a fixed volume: alcohol and water contract on mixing)`], hint: "This is the volume of the stronger alcohol, not of pure ethanol." };
+      },
+      () => {
+        const acids = [["hydrochloric acid", 37, 1.2], ["sulfuric acid", 96, 1.84], ["nitric acid", 70, 1.42], ["phosphoric acid", 85, 1.7]];
+        const [n, p, sg] = pick(acids);
+        const c = pick([5, 10, 20]);
+        const V = pick([500, 1000]);
+        const g = (V * c) / 100, w = g / (p / 100), ans = w / sg;
+        return { type: "num", text: `How many mL of <b>${p}% w/w ${n}</b> (specific gravity <b>${sg}</b>) are needed to make <b>${V} mL</b> of a <b>${c}% w/v</b> solution?`, unit: "mL", answer: ans, tol: Math.max(0.5, tolRel(ans)),
+          steps: [`Acid needed: ${V} × ${c} ÷ 100 = ${fmt(g)} g`, `Weight of ${p}% w/w acid: ${fmt(g)} ÷ ${p / 100} = ${fmt(w, 1)} g`, `Volume: ${fmt(w, 1)} g ÷ ${sg} = ${fmt(ans, 1)} mL`], hint: "Grams needed → grams of concentrated acid (÷ w/w fraction) → mL (÷ SG)." };
+      },
+      () => mc("To make 8500 mL of 50% alcohol from 5000 mL of 85% alcohol, what should the label instruction say?",
+        ["Add exactly 3500 mL of water", "Add sufficient water to make 8500 mL", "Add 3500 mL of 50% alcohol", "Add 8500 mL of water"], 1,
+        ["Alcohol and water contract when mixed, so 5000 mL + 3500 mL gives less than 8500 mL.", "The correct instruction is to make up to volume (q.s. to 8500 mL)."], "Think about what happens to the volume when ethanol and water mix."),
+    ],
+  },
+  {
+    id: "aliquot", name: "Trituration & aliquots", full: "Potent drugs", color: "amber",
+    gens: [
+      () => {
+        // need total < MWQ; trituration total = MWQ * A / total
+        const combos = [[0.6, 10, 100, 120], [0.5, 10, 100, 100], [0.25, 20, 100, 125], [0.4, 10, 100, 100], [1, 5, 100, 100], [0.2, 10, 100, 100], [2, 10, 100, 120], [0.3, 10, 120, 120]];
+        const [d, n, m, A] = pick(combos);
+        const total = d * n, trit = (m * A) / total, ans = trit - m;
+        return { type: "num", text: `Rx: <b>${n} capsules</b>, each containing <b>${d} mg</b> of a potent drug. The MWQ is <b>${m} mg</b>. You weigh ${m} mg of drug and plan to take an aliquot of <b>${A} mg</b>. How much <b>lactose</b> do you add to make the trituration?`, unit: "mg", answer: ans, tol: tolRel(ans),
+          steps: [`Drug needed: ${d} × ${n} = ${fmt(total)} mg (below the MWQ)`, `Total trituration: ${m} × ${A} ÷ ${fmt(total)} = ${fmt(trit)} mg`, `Lactose: ${fmt(trit)} − ${m} = ${fmt(ans)} mg`], hint: "total trituration ÷ drug weighed = aliquot ÷ drug in aliquot. Then subtract the drug." };
+      },
+      () => {
+        const X = pick([5, 10, 15, 20, 25, 50]);
+        const r = pick([10, 20]);
+        const ans = X * r;
+        return { type: "num", text: `You have a <b>1:${r}</b> (w/w) trituration of a potent drug in lactose. How much trituration do you weigh to get <b>${X} mg</b> of drug?`, unit: "mg", answer: ans, tol: tolRel(ans),
+          steps: [`1 part drug in ${r} parts trituration`, `${X} mg × ${r}`, `= ${ans} mg of trituration`], hint: `1:${r} means 1 g of drug in every ${r} g of mixture.` };
+      },
+      () => {
+        const dose = pick([15, 20, 25, 30]);
+        const n = pick([10, 20]);
+        const m = 100;
+        const total = dose * n;
+        return mc(`A patient needs <b>${dose} mg</b> of drug B per dose, for <b>${n} doses</b>. Your balance's MWQ is <b>${m} mg</b>. What is the best approach?`,
+          [`Weigh ${total} mg directly, mix with lactose and divide into ${n} equal portions`, `Weigh each ${dose} mg dose separately`, `Weigh ${m} mg and discard the excess`, `It cannot be done without a more sensitive balance`], 0,
+          [`Total drug = ${dose} × ${n} = ${total} mg`, `${total} mg is above the MWQ of ${m} mg, so it can be weighed directly`, `Dilute with lactose and divide into ${n} equal portions`], "Look at the total amount, not just one dose.");
+      },
+    ],
+  },
+  {
+    id: "alligation", name: "Alligation", full: "Alligation", color: "red",
+    gens: [
+      () => {
+        const sets = shuffle([[200, 10], [50, 20], [100, 5], [150, 2], [250, 4], [100, 15]]).slice(0, 3);
+        const tq = sets.reduce((s, x) => s + x[0], 0), td = sets.reduce((s, x) => s + (x[0] * x[1]) / 100, 0);
+        const ans = (td / tq) * 100;
+        return { type: "num", text: `What is the percentage of zinc oxide in an ointment made by mixing ${sets.map(([q, p]) => `<b>${q} g of ${p}%</b>`).join(", ")}?`, unit: "%", answer: ans, tol: Math.max(0.01, tolRel(ans)),
+          steps: [sets.map(([q, p]) => `${q} × ${p / 100} = ${fmt((q * p) / 100)} g`).join(";  "), `Total: ${fmt(td)} g zinc oxide in ${tq} g`, `${fmt(td)} ÷ ${tq} × 100 = ${fmt(ans)}%`], hint: "Alligation medial: total drug ÷ total quantity × 100." };
+      },
+      () => {
+        const sets = [[95, 50, 70], [90, 40, 60], [80, 30, 50], [95, 45, 70], [60, 20, 30], [20, 5, 10]];
+        const [a, b, c] = pick(sets);
+        const parts = a - b;
+        const V = parts * pick([10, 20, 40]);
+        const ans = (V * (c - b)) / parts;
+        return { type: "num", text: `How many mL of <b>${a}%</b> alcohol must be mixed with ${b}% alcohol to make <b>${V} mL</b> of <b>${c}%</b>?`, unit: "mL", answer: ans, tol: tolRel(ans),
+          steps: [`Parts of ${a}%: ${c} − ${b} = ${c - b};  parts of ${b}%: ${a} − ${c} = ${a - c}`, `Total parts: ${parts}`, `${a}% alcohol: ${c - b}/${parts} × ${V} = ${fmt(ans)} mL`], hint: "Parts of higher = c − b; parts of lower = a − c." };
+      },
+      () => {
+        const sets = [[3200, 5, 20], [1000, 10, 25], [900, 5, 10], [800, 2, 20], [600, 10, 40]];
+        const [Q, p, r] = pick(sets);
+        const ans = (Q * (r - p)) / (100 - r);
+        return { type: "num", text: `How many grams of <b>pure coal tar</b> should be added to <b>${Q} g</b> of <b>${p}%</b> coal tar ointment to make a <b>${r}%</b> ointment?`, unit: "g", answer: ans, tol: tolRel(ans),
+          steps: [`Pure coal tar counts as 100%`, `Parts of 100%: ${r} − ${p} = ${r - p};  parts of ${p}%: 100 − ${r} = ${100 - r}`, `${Q} g × ${r - p}/${100 - r} = ${fmt(ans)} g`], hint: "Pure drug = 100%. Use alligation alternate, then scale to the amount you have." };
+      },
+      () => {
+        const sets = [[500, 10, 4], [300, 20, 5], [400, 15, 10], [600, 5, 2], [250, 12, 3]];
+        const [Q, p, r] = pick(sets);
+        const ans = (Q * (p - r)) / r;
+        return { type: "num", text: `How many grams of <b>white soft paraffin</b> must be added to <b>${Q} g</b> of a <b>${p}%</b> ointment to make a <b>${r}%</b> ointment?`, unit: "g", answer: ans, tol: tolRel(ans),
+          steps: [`The base counts as 0%`, `Parts of ${p}%: ${r} − 0 = ${r};  parts of base: ${p} − ${r} = ${p - r}`, `${Q} g × ${p - r}/${r} = ${fmt(ans)} g`], hint: "A plain base is 0%." };
+      },
+    ],
+  },
+  {
+    id: "check", name: "Pharmacist's check", full: "Spot the error", color: "boss",
+    gens: [
+      () => mc("A classmate calculates the volume of <b>95%</b> alcohol needed for <b>200 mL of 70%</b> alcohol and writes <b>140 mL</b>. What went wrong?",
+        ["Nothing, 140 mL is correct", "140 mL is the volume of pure ethanol; the 95% alcohol needed is 147.4 mL", "They should have used 95 ÷ 70 × 200 = 271 mL", "They forgot to subtract the water"], 1,
+        ["200 × 70% = 140 mL of pure ethanol", "But the stock is 95%: 200 × 70 ÷ 95 = 147.4 mL of 95% alcohol"], "Is the stock pure (100%) ethanol?"),
+      () => mc("<b>500 mL of 15% w/v</b> is diluted to <b>1500 mL</b>. Which answer is correct?",
+        ["5% v/v", "5% w/v", "45% w/v", "15% w/v"], 1,
+        ["C₂ = 500 × 15 ÷ 1500 = 5", "Diluting a w/v solution gives a w/v strength: 5% w/v"], "Does adding water change the type of strength?"),
+      () => mc("A worked example writes: <b>“270 g ÷ 1.20 = 225 mL is the weight of an equal volume of water”</b>. What is 225 mL actually?",
+        ["The weight of water used", "The volume of concentrated acid to measure", "The final volume of diluted acid", "The weight of pure HCl"], 1,
+        ["270 g is the weight of 37% w/w acid", "Dividing by the specific gravity converts that weight to the volume of acid to measure: 225 mL"], "Weight ÷ SG = ?"),
+      () => mc("In an alligation medial table, <b>50 g of 20% ointment</b> is listed with a strength of <b>0.5</b>. What should it be?",
+        ["0.5", "0.05", "0.2", "2.0"], 2,
+        ["20% as a decimal is 0.20", "50 g × 0.20 = 10 g of drug"], "Divide the percentage by 100."),
+      () => mc("Which of these final answers <b>must</b> be wrong? Mixing 10% and 2% ointment gives…",
+        ["4%", "6%", "8%", "12%"], 3,
+        ["A mixture's strength must lie between its components (2% to 10%)", "12% is impossible"], "Where must a mixture's strength lie?"),
+      () => mc("You need <b>0.6 mg</b> of atropine per capsule for 10 capsules, and the MWQ is 100 mg. A student weighs <b>6 mg</b> of atropine directly. Why is this unsafe?",
+        ["6 mg is too much drug", "6 mg is below the MWQ, so the weighing error is unacceptably large", "Atropine cannot be mixed with lactose", "It is fine to weigh 6 mg"], 1,
+        ["Any amount below the MWQ cannot be weighed within an acceptable error", "Use the aliquot method: weigh 100 mg and dilute"], "Compare 6 mg with the MWQ."),
+    ],
+  },
+];
+
+function checkNum(q, raw) {
+  const v = parseFloat(String(raw).replace(/,/g, "").trim());
+  if (!isFinite(v)) return null;
+  return Math.abs(v - q.answer) <= q.tol;
+}
+if (typeof module !== "undefined") module.exports = { STATIONS, checkNum, fmt };
+
+</script>
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const app = $("#app");
+const TIME = 60, BASE = 100, MAXBONUS = 50, LIVES = 3;
+const RANKS = [[95, "Chief Pharmacist"], [80, "Senior Compounding Pharmacist"], [60, "Registered Pharmacist"], [40, "Provisionally Registered Pharmacist"], [0, "Pharmacy Trainee"]];
+let S = null, timerId = null;
+
+function store(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || "null"); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } }
+function best() { return store("dilutionRush.best") || { full: 0, quick: 0, st: {} }; }
+const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function fmtAns(n) { const a = Math.abs(n); return fmt(n, a < 0.01 ? 4 : a < 1 ? 3 : a < 100 ? 2 : 1); }
+
+function cylinder(frac, label) {
+  const H = 260, top = 30, h = H - top - 20, lv = Math.max(0, Math.min(1, frac)), lh = h * lv, ly = top + h - lh;
+  let ticks = "";
+  for (let i = 0; i <= 10; i++) { const y = top + h - (h * i) / 10, w = i % 5 ? 10 : 18; ticks += `<line class="tick" x1="40" x2="${40 + w}" y1="${y}" y2="${y}"/>`; if (i % 5 === 0) ticks += `<text class="ticklbl" x="${62 + (w - 10)}" y="${y + 4}">${i * 10}</text>`; }
+  return `<svg class="cyl" viewBox="0 0 140 ${H + 10}" role="img" aria-label="${esc(label)}">
+    <rect class="liq" x="37" y="${ly}" width="66" height="${lh}"/>
+    <rect class="menis" x="37" y="${Math.max(top, ly - 4)}" width="66" height="${lv > 0 ? 5 : 0}"/>
+    ${lv > 0.05 ? `<circle class="bubble" cx="55" cy="${top + h - 8}" r="3"/><circle class="bubble" cx="82" cy="${top + h - 4}" r="2" style="animation-delay:1.2s"/>` : ""}
+    <path class="glass" d="M30 18 h80 M36 18 V${top + h} q0 4 4 4 h60 q4 0 4 -4 V18"/>
+    ${ticks}
+    <rect class="base" x="22" y="${top + h + 6}" width="96" height="8" rx="3"/>
+  </svg>`;
+}
+
+function renderStats() {
+  const on = !!S && S.screen === "play";
+  $("#stats").hidden = !on;
+  if (!on) return;
+  $("#sScore").textContent = S.score.toLocaleString();
+  $("#sStreak").textContent = S.streak;
+  $("#sSafetyChip").hidden = S.mode === "practice";
+  $("#sCaps").innerHTML = Array.from({ length: LIVES }, (_, i) => `<span class="cap ${i < LIVES - S.lives ? "lost" : ""}"></span>`).join("");
+}
+
+function toast(t) { const el = $("#toast"); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => (el.hidden = true), 1800); }
+
+// ---------- home ----------
+function home() {
+  stopTimer(); S = null; renderStats();
+  const b = best();
+  app.innerHTML = `
+  <section class="hero">
+    <div>
+      <div class="eyebrow">PHD113 · Concentration and Dilution</div>
+      <h1>Dilution <span>Rush</span></h1>
+      <p class="lede">Your shift at the compounding counter starts now. Prescriptions arrive one after another: work out each quantity before the clock runs down, and keep your patients safe.</p>
+      <div class="cta">
+        <button class="btn primary" id="goFull" type="button">Start full shift · 21 Rx</button>
+        <button class="btn secondary" id="goQuick" type="button">Quick round · 10 Rx</button>
+      </div>
+      <p class="note" style="margin-top:12px">Best full shift: <b class="num">${b.full.toLocaleString()}</b> · Best quick round: <b class="num">${b.quick.toLocaleString()}</b></p>
+    </div>
+    <div class="cylwrap">${cylinder(0.62, "Graduated cylinder")}</div>
+  </section>
+  <div class="rules">
+    <div class="rule"><b>+100</b>for each correct answer</div>
+    <div class="rule"><b>+50</b>bonus for answering fast (inside ${TIME} s)</div>
+    <div class="rule"><b>×2</b>streak multiplier, building +0.25 per correct answer in a row</div>
+    <div class="rule"><b>3</b>safety strikes end a shift. Hints halve the points</div>
+  </div>
+  <div class="section-h"><h2>Practise one station</h2><p>5 prescriptions, no strikes. Numbers change every time.</p></div>
+  <div class="stations">
+    ${STATIONS.map((s, i) => `<button class="st ${s.color === "boss" ? "boss" : ""}" data-st="${i}" type="button">
+      <span class="no">Station ${i + 1}</span><h3>${s.name}</h3><span class="sub">${s.full}</span>
+      <span class="best">${b.st[s.id] != null ? `Best: ${b.st[s.id]}/5` : "Not tried yet"}</span></button>`).join("")}
+  </div>`;
+  $("#goFull").onclick = () => start("full");
+  $("#goQuick").onclick = () => start("quick");
+  app.querySelectorAll("[data-st]").forEach((el) => (el.onclick = () => start("practice", +el.dataset.st)));
+}
+
+function makeQ(si) {
+  const st = STATIONS[si];
+  return { si, ...st.gens[Math.floor(Math.random() * st.gens.length)](), patient: PATIENTS[Math.floor(Math.random() * PATIENTS.length)] };
+}
+function start(mode, si) {
+  let qs = [];
+  if (mode === "full") STATIONS.forEach((st, i) => { const g = shuffle(st.gens).slice(0, 3); g.forEach((fn) => qs.push({ si: i, ...fn(), patient: pick(PATIENTS) })); });
+  else if (mode === "quick") { qs = shuffle(STATIONS.flatMap((st, i) => shuffle(st.gens).slice(0, 2).map((fn) => ({ si: i, ...fn(), patient: pick(PATIENTS) })))).slice(0, 10); }
+  else { const st = STATIONS[si]; const g = shuffle(st.gens.concat(st.gens)).slice(0, 5); qs = g.map((fn) => ({ si, ...fn(), patient: pick(PATIENTS) })); }
+  S = { mode, si, qs, i: 0, score: 0, streak: 0, lives: LIVES, results: [], screen: "play", t0: 0, hintUsed: false, answered: false, picked: null, given: "" };
+  ask();
+}
+
+// ---------- play ----------
+function mult() { return Math.min(2, 1 + 0.25 * S.streak); }
+function ask() {
+  S.hintUsed = false; S.answered = false; S.picked = null; S.given = ""; S.t0 = Date.now(); S.screen = "play";
+  const q = S.qs[S.i], st = STATIONS[q.si];
+  if (S.i === 0 || S.qs[S.i - 1].si !== q.si) { if (S.mode !== "practice") toast(`Station ${q.si + 1}: ${st.name}`); }
+  draw(); startTimer();
+}
+function draw(feedback) {
+  renderStats();
+  const q = S.qs[S.i], st = STATIONS[q.si], n = S.qs.length;
+  const frac = (S.i + (S.answered ? 1 : 0)) / n;
+  const date = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  const body = q.type === "num"
+    ? `<div class="answer"><label class="field" for="ans"><input id="ans" inputmode="decimal" autocomplete="off" placeholder="Your answer" value="${esc(S.given)}" ${S.answered ? "disabled" : ""} aria-label="Answer in ${esc(q.unit)}"><span class="unit">${esc(q.unit)}</span></label></div>`
+    : `<div class="choices">${q.choices.map((c, k) => {
+        let cls = ""; if (S.answered) { if (k === q.correctIndex) cls = "right"; else if (k === S.picked) cls = "wrong"; }
+        return `<button class="choice ${cls}" data-k="${k}" type="button" ${S.answered ? "disabled" : ""}><span class="k">${"ABCD"[k]}</span><span>${c}</span></button>`; }).join("")}</div>`;
+  app.innerHTML = `
+  <section class="play">
+    <article class="rx" id="rx">
+      <div class="rx-top"><span class="station">Station ${q.si + 1} · ${st.name}</span><span class="count">Rx ${S.i + 1} of ${n}</span></div>
+      <div class="rx-body">
+        <div class="rx-meta"><span class="sym">℞</span><span>Patient: ${q.patient}</span><span>${date}</span></div>
+        <div class="q">${q.text}</div>
+        ${S.answered ? "" : `<div><div class="timer"><i id="tbar"></i></div><div class="timer-row"><span>Speed bonus</span><span id="tleft" class="num">${TIME}s</span></div></div>`}
+        ${body}
+        ${S.hintUsed && !S.answered ? `<div class="hint"><b>Hint:</b> ${q.hint}</div>` : ""}
+        ${feedback || `<div class="actions">
+          ${q.type === "num" ? `<button class="btn primary" id="check" type="button">Check answer</button>` : ""}
+          <button class="btn ghost" id="hintBtn" type="button" ${S.hintUsed ? "disabled" : ""}>${S.hintUsed ? "Hint used" : "Show hint (½ points)"}</button>
+        </div>`}
+      </div>
+    </article>
+    <aside class="side">
+      ${cylinder(frac, `Shift progress ${Math.round(frac * 100)}%`)}
+      <div class="cap-lbl">Shift progress</div>
+      <div class="mult">Multiplier <b>×${mult().toFixed(2)}</b></div>
+    </aside>
+  </section>`;
+  const inp = $("#ans");
+  if (inp && !S.answered) { inp.focus(); inp.oninput = () => (S.given = inp.value); inp.onkeydown = (e) => { if (e.key === "Enter") submit(); }; }
+  const c = $("#check"); if (c) c.onclick = submit;
+  const h = $("#hintBtn"); if (h) h.onclick = () => { S.hintUsed = true; draw(); };
+  app.querySelectorAll(".choice").forEach((b) => (b.onclick = () => { S.picked = +b.dataset.k; submit(); }));
+  const nx = $("#next"); if (nx) { nx.onclick = next; nx.focus(); }
+}
+function startTimer() {
+  stopTimer();
+  const tick = () => {
+    const left = Math.max(0, TIME - (Date.now() - S.t0) / 1000);
+    const bar = $("#tbar"), tl = $("#tleft");
+    if (bar) bar.style.transform = `scaleX(${left / TIME})`;
+    if (tl) tl.textContent = Math.ceil(left) + "s";
+    if (left <= 0) stopTimer();
+  };
+  tick(); timerId = setInterval(tick, 250);
+}
+function stopTimer() { if (timerId) clearInterval(timerId); timerId = null; }
+
+function submit() {
+  if (S.answered) return;
+  const q = S.qs[S.i];
+  let ok;
+  if (q.type === "num") {
+    const r = checkNum(q, S.given);
+    if (r === null) { toast("Type a number first"); const f = $(".field"); f && f.classList.add("shake"); setTimeout(() => f && f.classList.remove("shake"), 400); return; }
+    ok = r;
+  } else ok = S.picked === q.correctIndex;
+  stopTimer();
+  const secs = (Date.now() - S.t0) / 1000;
+  let pts = 0;
+  if (ok) {
+    const bonus = Math.round(MAXBONUS * Math.max(0, (TIME - secs) / TIME));
+    pts = Math.round((BASE + bonus) * mult() * (S.hintUsed ? 0.5 : 1));
+    S.streak++; S.score += pts;
+  } else { S.streak = 0; if (S.mode !== "practice") S.lives--; }
+  S.answered = true;
+  S.results.push({ si: q.si, ok, q, given: q.type === "num" ? S.given : q.choices[S.picked] });
+  const last = S.i === S.qs.length - 1 || S.lives <= 0;
+  const correct = q.type === "num" ? `${fmtAns(q.answer)} ${q.unit}` : q.choices[q.correctIndex];
+  const fb = `<div class="fb ${ok ? "ok" : "no"} pop">
+      <div class="verdict"><h3>${ok ? pick(["Dispensed correctly", "Spot on", "Checked and correct", "Safe to supply"]) : (S.mode === "practice" ? "Not quite" : "Safety strike")}</h3>
+      <span class="pts">${ok ? "+" + pts : "+0"}</span></div>
+      ${ok ? "" : `<div>Correct answer: <b class="num">${correct}</b>${q.type === "num" ? ` <span class="note">(you entered ${esc(S.given)})</span>` : ""}</div>`}
+      <ol class="steps">${q.steps.map((s) => `<li>${s}</li>`).join("")}</ol>
+    </div>
+    <div class="actions"><button class="btn primary" id="next" type="button">${last ? "See results" : "Next prescription"}</button>
+    ${S.lives <= 0 && S.mode !== "practice" ? `<span class="note">Three safety strikes: your shift ends here.</span>` : ""}</div>`;
+  draw(fb);
+  if (!ok) { const rx = $("#rx"); rx.classList.add("shake"); }
+  document.onkeydown = (e) => { if (e.key === "Enter" && S && S.answered && S.screen === "play") { e.preventDefault(); next(); } };
+}
+function next() {
+  document.onkeydown = null;
+  if (S.lives <= 0 || S.i >= S.qs.length - 1) return finish();
+  S.i++; ask();
+}
+
+// ---------- results ----------
+function finish() {
+  stopTimer(); S.screen = "end"; renderStats();
+  const total = S.qs.length, right = S.results.filter((r) => r.ok).length, acc = Math.round((right / total) * 100);
+  const rank = RANKS.find(([t]) => acc >= t)[1];
+  const b = best(); let newBest = false;
+  if (S.mode === "full" && S.score > b.full) { b.full = S.score; newBest = true; }
+  if (S.mode === "quick" && S.score > b.quick) { b.quick = S.score; newBest = true; }
+  if (S.mode === "practice") { const id = STATIONS[S.si].id; if (b.st[id] == null || right > b.st[id]) { b.st[id] = right; newBest = true; } }
+  store("dilutionRush.best", b);
+  const per = STATIONS.map((st, i) => { const rs = S.results.filter((r) => r.si === i); return { st, n: S.qs.filter((q) => q.si === i).length, ok: rs.filter((r) => r.ok).length }; }).filter((x) => x.n);
+  const missed = S.results.filter((r) => !r.ok);
+  const unanswered = total - S.results.length;
+  app.innerHTML = `
+  <section class="end">
+    <div class="card">
+      <div class="eyebrow">${S.mode === "practice" ? `Practice · ${STATIONS[S.si].name}` : S.mode === "full" ? "Full shift complete" : "Quick round complete"}${S.lives <= 0 && S.mode !== "practice" ? " · ended early" : ""}</div>
+      <h2 class="rank">${rank}</h2>
+      <div class="big">
+        <div><b>${S.score.toLocaleString()}</b><span>Score${newBest ? " · new best" : ""}</span></div>
+        <div><b>${right}/${total}</b><span>Correct</span></div>
+        <div><b>${acc}%</b><span>Accuracy</span></div>
+      </div>
+      ${unanswered ? `<p class="note">${unanswered} prescription${unanswered > 1 ? "s were" : " was"} left unanswered when the shift ended.</p>` : ""}
+      <div class="cta">
+        <button class="btn primary" id="again" type="button">Play again</button>
+        <button class="btn secondary" id="toHome" type="button">Choose another mode</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="color:var(--deep);margin-bottom:12px">By station</h3>
+      <div class="brk">${per.map((p) => `<div class="brk-row"><span>${p.st.name}</span><span class="brk-bar"><i style="width:${(p.ok / p.n) * 100}%"></i></span><span class="num">${p.ok}/${p.n}</span></div>`).join("")}</div>
+      <p class="note" style="margin-top:12px">Rank is based on accuracy: 95% Chief Pharmacist · 80% Senior Compounding · 60% Registered · 40% Provisionally Registered.</p>
+    </div>
+  </section>
+  ${missed.length ? `<section class="card" style="margin-top:24px"><h3 style="color:var(--deep)">Review your misses (${missed.length})</h3>
+    <div class="miss">${missed.map((r) => `<details><summary>Station ${r.si + 1} · ${STATIONS[r.si].name}</summary>
+      <div class="q">${r.q.text}</div>
+      <div class="note">Your answer: ${esc(r.given ?? "")} · Correct: <b class="num">${r.q.type === "num" ? fmtAns(r.q.answer) + " " + r.q.unit : r.q.choices[r.q.correctIndex]}</b></div>
+      <ol class="steps" style="margin-top:8px">${r.q.steps.map((s) => `<li>${s}</li>`).join("")}</ol></details>`).join("")}</div></section>` : ""}`;
+  $("#again").onclick = () => start(S.mode, S.si);
+  $("#toHome").onclick = home;
+}
+
+$("#homeBtn").onclick = home;
+const boot = (data) => { if (data && data.S && data.S.qs) { S = data.S; if (S.screen === "end") finish(); else if (S.answered) next(); else ask(); } else home(); };
+window.claude?.hot?.snapshot?.(() => ({ S }));
+window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
+</script>
+
+</body>
+</html>
